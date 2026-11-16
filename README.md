@@ -27,11 +27,18 @@ Abre http://localhost:3000.
 
 | Ficheiro | O que tem |
 |---|---|
-| `lib/system-prompt.ts` | A personalidade e as regras do chatbot |
+| `lib/system-prompt.ts` | A personalidade, as regras do chatbot e o formato das respostas |
+| `lib/openui-library.tsx` | Os componentes que o chatbot pode usar nas respostas (OpenUI) |
 | `app/api/chat/route.ts` | Ligação ao DeepSeek, com resposta em streaming |
 | `components/Chat.tsx` | A interface da conversa |
 | `components/Logo.tsx` | O logótipo (a moeda com o lado positivo) |
 | `app/globals.css` | Cores e estilos |
+
+## Respostas com componentes
+
+O chatbot responde em [OpenUI Lang](https://www.openui.com) e a página desenha a resposta com os componentes de `lib/openui-library.tsx`: `Texto`, `OutroLado`, `Exercicio`, `Meme` e `Sugestoes`. Os memes são desenhados pela própria aplicação (duas frases e uma expressão), sem imagens externas.
+
+A lista de componentes está escrita em dois sítios: na biblioteca e no fim de `lib/system-prompt.ts`. Se mudares um, muda o outro.
 
 ## Publicar
 

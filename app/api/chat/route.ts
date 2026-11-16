@@ -2,7 +2,7 @@ import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 
 const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
 const MAX_MESSAGES = 30;
-const MAX_CHARS = 2000;
+const MAX_CHARS = 4000;
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -54,6 +54,9 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: process.env.DEEPSEEK_MODEL || "deepseek-flash",
         stream: true,
+        // O modo de raciocínio vem ligado por omissão e atrasa muito a primeira
+        // palavra. Para uma conversa deste género não é preciso.
+        thinking: { type: "disabled" },
         messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
       }),
       signal: request.signal,
@@ -71,32 +74,42 @@ export async function POST(request: Request) {
   const reader = upstream.body.getReader();
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
-  let buffer = "";
 
   const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      const { done, value } = await reader.read();
-      if (done) {
-        controller.close();
-        return;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
+    // O ciclo vive todo em start(): um pull() que termina sem enviar nada
+    // (por exemplo, num bloco só com raciocínio) não volta a ser chamado e a
+    // resposta ficava parada para sempre.
+    async start(controller) {
+      let buffer = "";
 
-      for (const line of lines) {
+      const tratar = (line: string) => {
         const trimmed = line.trim();
-        if (!trimmed.startsWith("data:")) continue;
+        if (!trimmed.startsWith("data:")) return;
         const data = trimmed.slice(5).trim();
-        if (data === "[DONE]") continue;
+        if (data === "[DONE]") return;
         try {
           const text = JSON.parse(data)?.choices?.[0]?.delta?.content;
           if (typeof text === "string" && text) {
             controller.enqueue(encoder.encode(text));
           }
         } catch {
-          // linha incompleta ou comentário de keep-alive: ignora
+          // comentário de keep-alive ou linha que não é JSON: ignora
         }
+      };
+
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          lines.forEach(tratar);
+        }
+        tratar(buffer);
+        controller.close();
+      } catch (e) {
+        controller.error(e);
       }
     },
     cancel() {

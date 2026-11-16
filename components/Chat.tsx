@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { Renderer } from "@openuidev/react-lang";
+import { EnviarContext, biblioteca } from "@/lib/openui-library";
 import Logo from "./Logo";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -11,6 +13,37 @@ const SUGESTOES = [
   "Sinto que nada me corre bem",
   "Estou nervoso com o futuro",
 ];
+
+// O modelo às vezes embrulha a resposta num bloco de código.
+function semBlocoDeCodigo(texto: string) {
+  return texto
+    .replace(/^\s*```[a-z-]*\r?\n?/i, "")
+    .replace(/\n?```\s*$/, "")
+    .trim();
+}
+
+function Pensar() {
+  return (
+    <div className="a-pensar">
+      <Logo size={26} flipping />
+      <span>A procurar o outro lado</span>
+    </div>
+  );
+}
+
+function RespostaBot({ texto, streaming }: { texto: string; streaming: boolean }) {
+  const limpo = semBlocoDeCodigo(texto);
+
+  // Ainda não chegou o suficiente para saber o que mostrar.
+  if (streaming && limpo.length < 8) return <Pensar />;
+
+  // Se o modelo responder em texto simples, mostra-o num balão normal.
+  if (!/^root\s*=/.test(limpo)) {
+    return <p className="balao balao-bot">{limpo}</p>;
+  }
+
+  return <Renderer response={limpo} library={biblioteca} isStreaming={streaming} />;
+}
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -126,18 +159,23 @@ export default function Chat() {
           </section>
         ) : (
           <ol className="mensagens" aria-live="polite">
-            {messages.map((m, i) =>
-              m.role === "assistant" && m.content === "" ? (
-                <li key={i} className="a-pensar">
-                  <Logo size={26} flipping />
-                  <span>A procurar o outro lado</span>
+            {messages.map((m, i) => {
+              if (m.role === "user") {
+                return (
+                  <li key={i} className="balao balao-eu">
+                    {m.content}
+                  </li>
+                );
+              }
+              const ultima = i === messages.length - 1;
+              return (
+                <li key={i} className="linha-bot">
+                  <EnviarContext.Provider value={ultima && !loading ? send : null}>
+                    <RespostaBot texto={m.content} streaming={ultima && loading} />
+                  </EnviarContext.Provider>
                 </li>
-              ) : (
-                <li key={i} className={m.role === "user" ? "balao balao-eu" : "balao balao-bot"}>
-                  {m.content}
-                </li>
-              ),
-            )}
+              );
+            })}
           </ol>
         )}
         {error && (
