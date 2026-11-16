@@ -4,6 +4,8 @@ Chatbot de inteligência artificial que responde sempre com positividade e ajuda
 
 Aplicação Next.js (App Router) numa só página. A rota `/api/chat` fala com o DeepSeek no servidor, por isso a chave nunca chega ao browser.
 
+A app abre com um ecrã de entrada (um círculo com um +), pede a aceitação dos termos na primeira visita e não guarda conversas nem pede dados pessoais. Funciona em telemóvel.
+
 ## Correr localmente
 
 Precisas do Node.js 20.9 ou superior.
@@ -29,16 +31,34 @@ Abre http://localhost:3000.
 |---|---|
 | `lib/system-prompt.ts` | A personalidade, as regras do chatbot e o formato das respostas |
 | `lib/openui-library.tsx` | Os componentes que o chatbot pode usar nas respostas (OpenUI) |
+| `lib/guardrails.ts` | O alerta vermelho: deteta mensagens sobre fazer mal a si ou a outros e define a resposta fixa |
 | `app/api/chat/route.ts` | Ligação ao DeepSeek, com resposta em streaming |
-| `components/Chat.tsx` | A interface da conversa |
-| `components/Logo.tsx` | O logótipo (a moeda com o lado positivo) |
+| `components/Chat.tsx` | A interface da conversa, o topo com o logótipo e o easter egg da moeda |
+| `components/Intro.tsx` | O ecrã de entrada animado |
+| `components/Termos.tsx` | O pop-up de termos e condições (aceitação guardada no `localStorage`) |
+| `components/Logo.tsx` | O logótipo (a moeda azul com o +) |
 | `app/globals.css` | Cores e estilos |
+
+## Segurança das conversas
+
+- **Alerta amarelo** (a pessoa fala mal de si própria): tratado no prompt, em `lib/system-prompt.ts`. O chatbot não concorda com o rótulo, separa a pessoa do que aconteceu e mantém a positividade.
+- **Alerta vermelho** (automutilação, suicídio, violência contra outros): `lib/guardrails.ts` deteta a mensagem antes de ela chegar ao modelo e a rota responde sempre com o mesmo texto, com o 112, o SNS 24 e o SOS Voz Amiga.
+
+A deteção é uma lista de expressões: não percebe contexto nem apanha formas indiretas. Para uso com um público grande ou jovem, o passo seguinte é um classificador. Confirma os números de apoio em fontes oficiais antes de publicares.
+
+```bash
+npm test
+```
 
 ## Respostas com componentes
 
 O chatbot responde em [OpenUI Lang](https://www.openui.com) e a página desenha a resposta com os componentes de `lib/openui-library.tsx`: `Texto`, `OutroLado`, `Exercicio`, `Meme` e `Sugestoes`. Os memes são desenhados pela própria aplicação (duas frases e uma expressão), sem imagens externas.
 
 A lista de componentes está escrita em dois sítios: na biblioteca e no fim de `lib/system-prompt.ts`. Se mudares um, muda o outro.
+
+## Privacidade
+
+A app não grava conversas. O texto que a pessoa escreve é enviado ao DeepSeek apenas para gerar a resposta, e os termos dizem isto. Confirma que o teu alojamento não guarda o corpo dos pedidos nos logs.
 
 ## Publicar
 

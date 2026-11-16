@@ -5,6 +5,7 @@
   --cafe: #2a1a0f; /* texto */
   --ganga: #2a34c9; /* logótipo e ações */
   --papel: #f6e9da; /* texto sobre fundos escuros */
+  --laranja: #ff8a3d; /* Instagram no rodapé */
 }
 
 * {
@@ -15,6 +16,12 @@ html,
 body {
   height: 100%;
   margin: 0;
+}
+
+html {
+  /* O iOS aumenta o texto sozinho quando o telemóvel roda. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -52,16 +59,100 @@ textarea {
   display: flex;
   flex-direction: column;
   height: 100dvh;
+}
+
+/* A coluna central vive em cada faixa, para a barra de deslocamento encostar à ponta do ecrã. */
+.topo,
+.rodape,
+.fundo-dentro {
+  width: 100%;
   max-width: 44rem;
   margin: 0 auto;
-  padding: 0 1.25rem;
+  padding-inline: max(1.25rem, env(safe-area-inset-left)) max(1.25rem, env(safe-area-inset-right));
 }
 
 .topo {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 1.125rem 0 0.75rem;
+  padding-top: max(1.125rem, env(safe-area-inset-top));
+  padding-bottom: 0.75rem;
+}
+
+/* A mesma onda da entrada, à volta da moeda. */
+.marca-moeda {
+  position: relative;
+  display: grid;
+  /* A margem negativa dá um alvo de toque de 44px sem mexer no alinhamento. */
+  margin: -0.3125rem;
+  padding: 0.3125rem;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.marca-moeda:active {
+  transform: scale(0.9);
+}
+
+.moeda-gira {
+  display: grid;
+  animation: virar 0.7s cubic-bezier(0.6, 0, 0.3, 1);
+}
+
+/* Easter egg: os + que saltam da moeda. */
+.chuva {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.chuva i {
+  grid-area: 1 / 1;
+  color: var(--ganga);
+  font-family: var(--fonte-titulo), sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  animation: saltar 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.chuva i:nth-child(odd) {
+  color: var(--cafe);
+}
+
+.chuva i:nth-child(3n) {
+  color: var(--papel);
+  font-size: 1.75rem;
+}
+
+@keyframes saltar {
+  0% {
+    transform: translate(0, 0) scale(0.3);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x), var(--y)) rotate(180deg) scale(1);
+    opacity: 0;
+  }
+}
+
+.marca-moeda::after {
+  content: "";
+  position: absolute;
+  inset: 0.3125rem;
+  border: 2px solid var(--ganga);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: chamar 1.8s ease-out infinite;
 }
 
 .marca {
@@ -73,6 +164,7 @@ textarea {
 
 .recomecar {
   margin-left: auto;
+  min-height: 2.75rem; /* alvo de toque de 44px */
   padding: 0.375rem 0.875rem;
   background: none;
   border: 2px solid var(--cafe);
@@ -95,7 +187,11 @@ textarea {
 .conversa {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 0 1.5rem;
+  overscroll-behavior: contain;
+  /* 20.75rem = metade da coluna de 44rem, menos a margem de 1.25rem */
+  padding: 1rem max(1.25rem, calc(50% - 20.75rem)) 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--casca) transparent;
 }
 
 /* Ecrã inicial */
@@ -293,6 +389,7 @@ textarea {
 }
 
 .respostas-rapidas button {
+  min-height: 2.75rem;
   padding: 0.375rem 0.875rem;
   background: none;
   border: 2px solid var(--cafe);
@@ -375,6 +472,7 @@ textarea {
 }
 
 .caixa button {
+  min-height: 2.75rem;
   padding: 0.5rem 1.125rem;
   background: var(--ganga);
   color: var(--papel);
@@ -389,13 +487,283 @@ textarea {
   cursor: default;
 }
 
-.aviso {
-  margin: 0.625rem 0 0;
+.fundo {
+  background: var(--cafe);
+  color: #fff;
   font-size: 0.8125rem;
   line-height: 1.35;
 }
 
+.fundo-dentro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1.25rem;
+  padding-top: 0.75rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Em telemóveis o rodapé ocupa menos altura. */
+@media (max-width: 30rem) {
+  .fundo {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .fundo-dentro {
+    padding-top: 0.5rem;
+  }
+}
+
+/* Com o teclado aberto ou o telemóvel deitado, o espaço vai todo para a conversa. */
+@media (max-height: 30rem) {
+  .fundo {
+    display: none;
+  }
+}
+
+.fundo p {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+.fundo a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  color: var(--laranja);
+  font-weight: 700;
+}
+
+/* Entrada: o "embrulho" da app. Um círculo com um + que, ao ser tocado, cresce até
+   virar o fundo da página, enquanto o + muda de cor e a palavra "Positivo" sai dele. */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--cafe);
+  /* O atraso deixa ver "+ Positivo" antes de a app aparecer. */
+  transition: opacity 0.4s ease 1.8s;
+}
+
+.intro-aberta {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  color: var(--papel);
+  cursor: pointer;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+  transition: gap 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s;
+}
+
+.intro-botao:disabled {
+  cursor: default;
+}
+
+.intro-mais {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 9rem;
+  height: 9rem;
+  transition:
+    width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s,
+    height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s,
+    color 0.6s ease 0.15s;
+}
+
+.intro-mais svg {
+  width: 4rem;
+  height: 4rem;
+  transition:
+    transform 0.9s cubic-bezier(0.3, 1.4, 0.4, 1),
+    width 0.6s ease 0.45s,
+    height 0.6s ease 0.45s;
+}
+
+/* O círculo */
+.intro-mais::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--ganga);
+  transition:
+    transform 0.9s cubic-bezier(0.7, 0, 0.2, 1),
+    background-color 0.9s ease;
+}
+
+/* A onda que chama o toque */
+.intro-mais::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 3px solid var(--ganga);
+  border-radius: 50%;
+  animation: chamar 1.8s ease-out infinite;
+}
+
+@keyframes chamar {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+.intro-botao:hover:not(:disabled) .intro-mais::before {
+  transform: scale(1.08);
+}
+
+.intro-botao:hover:not(:disabled) svg {
+  transform: rotate(90deg);
+}
+
+.intro-botao:active:not(:disabled) .intro-mais::before {
+  transform: scale(0.94);
+}
+
+.intro-palavra {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  white-space: nowrap;
+  color: var(--cafe);
+  font-family: var(--fonte-titulo), sans-serif;
+  font-weight: 700;
+  font-size: clamp(2.75rem, 11vw, 5rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  transform: translateX(-0.4em);
+  transition:
+    max-width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s,
+    transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s,
+    opacity 0.4s ease 0.55s;
+}
+
+.intro-aberta .intro-botao {
+  gap: 0.5rem;
+}
+
+.intro-aberta .intro-mais {
+  width: clamp(2.5rem, 9vw, 4rem);
+  height: clamp(2.5rem, 9vw, 4rem);
+  color: var(--ganga);
+}
+
+.intro-aberta .intro-mais svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(270deg);
+}
+
+/* O círculo cresce até tapar o ecrã e fica da cor do fundo da app. */
+.intro-aberta .intro-mais::before {
+  transform: scale(60);
+  background: var(--castanho);
+}
+
+.intro-aberta .intro-mais::after {
+  animation: none;
+  opacity: 0;
+}
+
+.intro-aberta .intro-palavra {
+  max-width: 5em;
+  opacity: 1;
+  transform: none;
+}
+
+/* Termos e condições */
+
+.termos {
+  width: min(calc(100% - 2rem), 34rem);
+  max-height: calc(100dvh - 2rem);
+  padding: 1.5rem;
+  overflow-y: auto;
+  background: var(--areia);
+  color: var(--cafe);
+  border: 2px solid var(--cafe);
+  border-radius: 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--casca) transparent;
+}
+
+.termos::backdrop {
+  background: rgb(42 26 15 / 0.7);
+}
+
+.termos h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--fonte-titulo), sans-serif;
+  font-size: 1.625rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.termos p {
+  margin: 0;
+}
+
+.termos ul {
+  margin: 1rem 0 1.25rem;
+  padding-left: 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.termos li + li {
+  margin-top: 0.625rem;
+}
+
+.termos button {
+  width: 100%;
+  padding: 0.625rem 1.125rem;
+  background: var(--ganga);
+  color: var(--papel);
+  border: 0;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .marca-moeda::after,
+  .chuva {
+    display: none;
+  }
+
+  .moeda-gira {
+    animation: none;
+  }
+
+  .intro,
+  .intro *,
+  .intro *::before,
+  .intro *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
   .moeda-a-virar {
     animation: none;
   }

@@ -1,9 +1,11 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { CSSProperties, FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Renderer } from "@openuidev/react-lang";
 import { EnviarContext, biblioteca } from "@/lib/openui-library";
+import Intro from "./Intro";
 import Logo from "./Logo";
+import Termos from "./Termos";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -13,6 +15,10 @@ const SUGESTOES = [
   "Sinto que nada me corre bem",
   "Estou nervoso com o futuro",
 ];
+
+// Easter egg da moeda: "+ Positivo" passa a "+ Sorrisos", "+ Calma"...
+const MAIS = ["Sorrisos", "Calma", "Coragem", "Abraços", "Amigos", "Gargalhadas", "Sol", "Tu"];
+const CHUVA = 10;
 
 // O modelo às vezes embrulha a resposta num bloco de código.
 function semBlocoDeCodigo(texto: string) {
@@ -50,6 +56,10 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [intro, setIntro] = useState(true);
+  const [toques, setToques] = useState(0);
+  const [palavra, setPalavra] = useState("Positivo");
+  const voltar = useRef<ReturnType<typeof setTimeout>>(undefined);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -117,13 +127,51 @@ export default function Chat() {
     }
   }
 
+  function maisUm() {
+    setPalavra(MAIS[toques % MAIS.length]);
+    setToques(toques + 1);
+    clearTimeout(voltar.current);
+    voltar.current = setTimeout(() => setPalavra("Positivo"), 2000);
+  }
+
   const vazio = messages.length === 0;
 
   return (
-    <div className="pagina">
+    <>
+    {/* Os termos só aparecem depois de a entrada sair do ecrã. */}
+    {intro ? <Intro onFim={() => setIntro(false)} /> : <Termos />}
+    <div className="pagina" inert={intro}>
       <header className="topo">
-        <Logo size={34} />
-        <span className="marca">Lado Positivo</span>
+        {/* Easter egg: cada toque na moeda solta uma chuva de + e troca a palavra. */}
+        <button type="button" className="marca-moeda" aria-label="Mais positivo" onClick={maisUm}>
+          <span key={toques} className={toques ? "moeda-gira" : undefined}>
+            <Logo size={34} />
+          </span>
+          {toques > 0 && (
+            <span key={`chuva-${toques}`} className="chuva" aria-hidden="true">
+              {Array.from({ length: CHUVA }, (_, i) => {
+                const angulo = (i / CHUVA) * 2 * Math.PI + toques;
+                const dist = 3 + (i % 3);
+                return (
+                  <i
+                    key={i}
+                    style={
+                      {
+                        "--x": `${(Math.cos(angulo) * dist).toFixed(2)}rem`,
+                        "--y": `${(Math.sin(angulo) * dist).toFixed(2)}rem`,
+                      } as CSSProperties
+                    }
+                  >
+                    +
+                  </i>
+                );
+              })}
+            </span>
+          )}
+        </button>
+        <span className="marca" aria-live="polite">
+          {palavra}
+        </span>
         {!vazio && (
           <button
             type="button"
@@ -186,7 +234,7 @@ export default function Chat() {
         <div ref={endRef} />
       </main>
 
-      <footer className="rodape">
+      <div className="rodape">
         <form className="caixa" onSubmit={onSubmit}>
           <label htmlFor="mensagem" className="so-leitores">
             A tua mensagem
@@ -196,6 +244,7 @@ export default function Chat() {
             ref={inputRef}
             rows={1}
             maxLength={2000}
+            enterKeyHint="send"
             placeholder="O que aconteceu hoje?"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -205,11 +254,35 @@ export default function Chat() {
             Enviar
           </button>
         </form>
-        <p className="aviso">
-          O Lado Positivo é uma inteligência artificial e não substitui o apoio de um profissional.
-          Se estiveres em perigo, liga 112.
-        </p>
+      </div>
+
+      <footer className="fundo">
+        <div className="fundo-dentro">
+          <p>
+            O Lado Positivo é uma inteligência artificial e não substitui o apoio de um
+            profissional. Se estiveres em perigo, liga 112. Todas as conversas são privadas e não
+            são gravadas.
+          </p>
+          <a href="https://www.instagram.com/in.sintonia_/" target="_blank" rel="noopener noreferrer">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+            </svg>
+            <span className="so-leitores">Instagram: </span>
+            in.sintonia_
+          </a>
+        </div>
       </footer>
     </div>
+    </>
   );
 }

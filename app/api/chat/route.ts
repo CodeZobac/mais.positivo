@@ -1,3 +1,4 @@
+import { RESPOSTA_VERMELHA, alertaVermelho } from "@/lib/guardrails";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 
 const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
@@ -42,6 +43,13 @@ export async function POST(request: Request) {
 
   const messages = parseMessages(body);
   if (!messages) return erro("Pedido inválido.", 400);
+
+  // Kill switch: a mensagem não chega ao modelo e a resposta é sempre a mesma.
+  if (alertaVermelho(messages[messages.length - 1].content)) {
+    return new Response(RESPOSTA_VERMELHA, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+    });
+  }
 
   let upstream: Response;
   try {

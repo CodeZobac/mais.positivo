@@ -22,6 +22,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#BC9468",
+  // Deixa a app chegar às margens de ecrãs com recorte; as margens seguras tratam do resto.
+  viewportFit: "cover",
+  // Em Android, o teclado encolhe a página em vez de a tapar.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
