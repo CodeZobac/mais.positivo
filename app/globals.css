@@ -725,14 +725,27 @@ textarea {
   margin: 0;
 }
 
-.termos ul {
+.termos .gavetas {
   margin: 1rem 0 1.25rem;
-  padding-left: 1.25rem;
   font-size: 0.9375rem;
 }
 
-.termos li + li {
-  margin-top: 0.625rem;
+.termos details {
+  border-top: 1px solid var(--casca);
+}
+
+.termos details:last-child {
+  border-bottom: 1px solid var(--casca);
+}
+
+.termos summary {
+  padding: 0.625rem 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.termos details p {
+  padding-bottom: 0.75rem;
 }
 
 .termos button {

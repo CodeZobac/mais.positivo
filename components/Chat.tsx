@@ -52,6 +52,7 @@ function RespostaBot({ texto, streaming }: { texto: string; streaming: boolean }
 }
 
 // crypto.randomUUID só existe em https/localhost; no telemóvel via IP da rede não.
+const CONVERSA = "lado-positivo:conversa";
 const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 // ID anónimo e estável deste browser, para o Langfuse somar custos por utilizador.
@@ -77,6 +78,30 @@ export default function Chat() {
   const voltar = useRef<ReturnType<typeof setTimeout>>(undefined);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Repõe a conversa guardada. Tem de vir antes do efeito que grava.
+  useEffect(() => {
+    try {
+      const guardada = JSON.parse(localStorage.getItem(CONVERSA) || "null");
+      if (guardada && Array.isArray(guardada.messages) && typeof guardada.sessionId === "string") {
+        setMessages(guardada.messages);
+        setSessionId(guardada.sessionId);
+      }
+    } catch {
+      // sem acesso ao localStorage ou dados estragados: começa do zero
+    }
+  }, []);
+
+  // Grava só fora do stream; conversa vazia (novo chat) apaga a chave.
+  useEffect(() => {
+    if (loading) return;
+    try {
+      if (messages.length) localStorage.setItem(CONVERSA, JSON.stringify({ sessionId, messages }));
+      else localStorage.removeItem(CONVERSA);
+    } catch {
+      // sem acesso ao localStorage: a conversa só dura até recarregar
+    }
+  }, [messages, sessionId, loading]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
