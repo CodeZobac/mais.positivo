@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 // Muda a versão quando o texto mudar, para voltar a pedir a aceitação.
-const CHAVE = "lado-positivo:termos-v1";
+const CHAVE = "lado-positivo:termos-v2";
 
 export default function Termos() {
   const ref = useRef<HTMLDialogElement>(null);
@@ -57,10 +57,15 @@ export default function Termos() {
           liga 112. Para apoio psicológico, liga para o SNS 24: 808 24 24 24.
         </li>
         <li>
-          <strong>Privacidade.</strong> Não guardamos as tuas conversas nem pedimos dados
-          pessoais. O que escreves é enviado a um serviço externo de inteligência artificial
-          (DeepSeek) apenas para gerar a resposta, por isso não partilhes nomes, moradas ou outros
-          dados que te identifiquem.
+          <strong>Privacidade.</strong> Não pedimos dados pessoais. O que escreves é enviado a
+          um serviço externo de inteligência artificial (DeepSeek) para gerar a resposta, por isso
+          não partilhes nomes, moradas ou outros dados que te identifiquem.
+        </li>
+        <li>
+          <strong>Registo das conversas.</strong> Para controlar custos e melhorar a segurança, as
+          mensagens e as respostas ficam guardadas num serviço de monitorização (Langfuse), ligadas
+          a um código aleatório deste navegador e não ao teu nome. Quando uma mensagem faz disparar
+          um alerta de segurança, essa mensagem fica assinalada para ser revista.
         </li>
       </ul>
       <button type="button" onClick={aceitar}>

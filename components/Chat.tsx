@@ -51,7 +51,22 @@ function RespostaBot({ texto, streaming }: { texto: string; streaming: boolean }
   return <Renderer response={limpo} library={biblioteca} isStreaming={streaming} />;
 }
 
+// crypto.randomUUID só existe em https/localhost; no telemóvel via IP da rede não.
+const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+// ID anónimo e estável deste browser, para o Langfuse somar custos por utilizador.
+function idUtilizador() {
+  try {
+    let id = localStorage.getItem("lado-positivo-uid");
+    if (!id) localStorage.setItem("lado-positivo-uid", (id = novoId()));
+    return id;
+  } catch {
+    return "anon"; // sem acesso ao localStorage (modo privado)
+  }
+}
+
 export default function Chat() {
+  const [sessionId, setSessionId] = useState(() => novoId());
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -88,7 +103,7 @@ export default function Chat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, userId: idUtilizador(), sessionId }),
       });
 
       if (!res.ok || !res.body) {
@@ -179,6 +194,7 @@ export default function Chat() {
             onClick={() => {
               setMessages([]);
               setError(null);
+              setSessionId(novoId());
             }}
             disabled={loading}
           >
