@@ -1,3 +1,4 @@
+import { CONSENTIMENTO } from "@/lib/consentimento";
 import { propagateAttributes, startObservation } from "@langfuse/tracing";
 import { type Alerta, separarAlerta } from "@/lib/alerta";
 import { RESPOSTA_VERMELHA, alertaVermelho } from "@/lib/guardrails";
@@ -48,6 +49,11 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return erro("Pedido inválido.", 400);
+  }
+
+  // Sem consentimento, nada chega ao modelo nem ao Langfuse.
+  if ((body as Record<string, unknown>)?.consentimento !== CONSENTIMENTO) {
+    return erro("Para usares o chat, tens de aceitar os termos e dar o teu consentimento.", 403);
   }
 
   const messages = parseMessages(body);

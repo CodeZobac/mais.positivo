@@ -1,29 +1,46 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CONSENTIMENTO } from "@/lib/consentimento";
 
-// Muda a versão quando o texto mudar, para voltar a pedir a aceitação.
-const CHAVE = "lado-positivo:termos-v3";
+const CHAVE = `lado-positivo:${CONSENTIMENTO}`;
 
-export default function Termos() {
+function lerAceite() {
+  try {
+    return localStorage.getItem(CHAVE) === "aceite";
+  } catch {
+    return false; // sem acesso ao localStorage (modo privado): pede sempre
+  }
+}
+
+// `rever` sobe cada vez que a roldana é carregada e volta a abrir o formulário.
+export default function Termos({ rever, onMudar }: { rever: number; onMudar: (aceite: boolean) => void }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const [termos, setTermos] = useState(false);
+  const [saude, setSaude] = useState(false);
+  const [jaAceite, setJaAceite] = useState(false);
 
   useEffect(() => {
-    let aceite = false;
-    try {
-      aceite = localStorage.getItem(CHAVE) === "aceite";
-    } catch {
-      // sem acesso ao localStorage (modo privado): pede sempre
-    }
-    if (!aceite) ref.current?.showModal();
-  }, []);
+    const aceite = lerAceite();
+    setTermos(aceite);
+    setSaude(aceite);
+    setJaAceite(aceite);
+    onMudar(aceite);
+    if (!aceite || rever) ref.current?.showModal();
+    // onMudar fica de fora: só interessa reagir à roldana.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rever]);
 
-  function aceitar() {
+  const ok = termos && saude;
+
+  function guardar() {
     try {
-      localStorage.setItem(CHAVE, "aceite");
+      if (ok) localStorage.setItem(CHAVE, "aceite");
+      else localStorage.removeItem(CHAVE);
     } catch {
       // não foi possível guardar: volta a pedir na próxima visita
     }
+    onMudar(ok);
     ref.current?.close();
   }
 
@@ -32,7 +49,7 @@ export default function Termos() {
       ref={ref}
       className="termos"
       aria-labelledby="termos-titulo"
-      // Só fecha ao aceitar: a tecla Esc não conta.
+      // Só fecha pelo botão: a tecla Esc não conta.
       onCancel={(e) => e.preventDefault()}
     >
       <h2 id="termos-titulo">Antes de começares</h2>
@@ -43,32 +60,41 @@ export default function Termos() {
           <p>Quem responde é um modelo de linguagem, não uma pessoa. Pode enganar-se, inventar coisas ou dar respostas que não servem para a tua situação.</p>
         </details>
         <details>
-          <summary>Não é aconselhamento profissional</summary>
-          <p>O Lado Positivo não é médico nem psicólogo, não faz diagnósticos e não substitui um profissional. Se precisares, procura aconselhamento médico ou psicológico.</p>
-        </details>
-        <details>
-          <summary>A responsabilidade é tua</summary>
-          <p>Tudo o que fizeres ou decidires com base no que a aplicação te disser é da tua inteira responsabilidade.</p>
+          <summary>Não substitui um profissional</summary>
+          <p>O Lado Positivo não é médico nem psicólogo e não faz diagnósticos. Se precisares, procura ajuda profissional. O que fizeres com base nas respostas é da tua responsabilidade.</p>
         </details>
         <details>
           <summary>Não serve para emergências</summary>
           <p>Se tu ou outra pessoa estiverem em perigo, liga 112. Para apoio psicológico, liga para o SNS 24: 808 24 24 24.</p>
         </details>
         <details>
-          <summary>Privacidade</summary>
-          <p>Não pedimos dados pessoais. O que escreves é enviado a um serviço externo de inteligência artificial (DeepSeek) para gerar a resposta, por isso não partilhes nomes, moradas ou outros dados que te identifiquem.</p>
-        </details>
-        <details>
-          <summary>Registo das conversas</summary>
-          <p>Para controlar custos e melhorar a segurança, as mensagens e as respostas ficam guardadas num serviço de monitorização (Langfuse), ligadas a um código aleatório deste navegador e não ao teu nome. Quando uma mensagem faz disparar um alerta de segurança, essa mensagem fica assinalada para ser revista.</p>
-        </details>
-        <details>
-          <summary>Conversa guardada neste dispositivo</summary>
-          <p>A conversa fica guardada no navegador deste dispositivo até carregares em novo chat, para não a perderes se fechares a página. Não passa para outros dispositivos. Quem usar este navegador pode vê-la, por isso, num dispositivo partilhado, carrega em novo chat quando acabares.</p>
+          <summary>Os teus dados</summary>
+          <p>Não pedimos nome nem conta. As mensagens são enviadas à DeepSeek, na China, para gerar a resposta, e ficam registadas 90 dias (Langfuse, na UE) por segurança. A conversa fica guardada neste navegador até carregares em novo chat. Não partilhes dados que te identifiquem. Tudo em detalhe na <a href="/privacidade" target="_blank">política de privacidade</a>.</p>
         </details>
       </div>
-      <button type="button" onClick={aceitar}>
-        Li e aceito
+      <label className="consentimento">
+        <input type="checkbox" checked={termos} onChange={(e) => setTermos(e.target.checked)} />
+        <span>
+          Tenho 13 anos ou mais (ou autorização dos meus pais), li e aceito estes termos e a{" "}
+          <a href="/privacidade" target="_blank">política de privacidade</a>.
+        </span>
+      </label>
+      <label className="consentimento">
+        <input type="checkbox" checked={saude} onChange={(e) => setSaude(e.target.checked)} />
+        <span>
+          Dou o meu consentimento explícito para que as minhas mensagens, que podem incluir
+          informação sobre a minha saúde e o meu estado emocional, sejam tratadas para gerar
+          respostas e enviadas à DeepSeek, na China, sabendo que a China não garante uma proteção
+          de dados equivalente à da UE. Posso retirar este consentimento a qualquer momento.
+        </span>
+      </label>
+      <p className="nota">
+        Podes retirar estas autorizações a qualquer momento na roldana de definições, no fundo da
+        página. Sem elas, não podes usar o chat.
+      </p>
+      {/* Na primeira vez só se avança aceitando; depois, desmarcar e guardar retira o consentimento. */}
+      <button type="button" onClick={guardar} disabled={!ok && !jaAceite}>
+        {ok ? (jaAceite ? "Guardar" : "Aceito e quero começar") : "Retirar autorizações"}
       </button>
     </dialog>
   );

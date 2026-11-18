@@ -6,6 +6,7 @@ import { EnviarContext, biblioteca } from "@/lib/openui-library";
 import Intro from "./Intro";
 import Logo from "./Logo";
 import Termos from "./Termos";
+import { CONSENTIMENTO } from "@/lib/consentimento";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -73,6 +74,8 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [intro, setIntro] = useState(true);
+  const [consentido, setConsentido] = useState(false);
+  const [rever, setRever] = useState(0);
   const [toques, setToques] = useState(0);
   const [palavra, setPalavra] = useState("Positivo");
   const voltar = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -116,7 +119,7 @@ export default function Chat() {
 
   async function send(text: string) {
     const content = text.trim();
-    if (!content || loading) return;
+    if (!content || loading || !consentido) return;
 
     const history: Message[] = [...messages, { role: "user", content }];
     setMessages([...history, { role: "assistant", content: "" }]);
@@ -128,7 +131,7 @@ export default function Chat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, userId: idUtilizador(), sessionId }),
+        body: JSON.stringify({ messages: history, userId: idUtilizador(), sessionId, consentimento: CONSENTIMENTO }),
       });
 
       if (!res.ok || !res.body) {
@@ -179,7 +182,18 @@ export default function Chat() {
   return (
     <>
     {/* Os termos só aparecem depois de a entrada sair do ecrã. */}
-    {intro ? <Intro onFim={() => setIntro(false)} /> : <Termos />}
+    {intro ? (
+      <Intro onFim={() => setIntro(false)} />
+    ) : (
+      <Termos
+        rever={rever}
+        onMudar={(aceite) => {
+          setConsentido(aceite);
+          // Ao retirar o consentimento, a conversa guardada neste navegador também desaparece.
+          if (!aceite) setMessages([]);
+        }}
+      />
+    )}
     <div className="pagina" inert={intro}>
       <header className="topo">
         {/* Easter egg: cada toque na moeda solta uma chuva de + e troca a palavra. */}
@@ -239,7 +253,7 @@ export default function Chat() {
             <ul className="sugestoes">
               {SUGESTOES.map((s) => (
                 <li key={s}>
-                  <button type="button" onClick={() => send(s)}>
+                  <button type="button" onClick={() => send(s)} disabled={!consentido}>
                     {s}
                   </button>
                 </li>
@@ -276,6 +290,14 @@ export default function Chat() {
       </main>
 
       <div className="rodape">
+        {!consentido && !intro && (
+          <p className="sem-consentimento">
+            Sem as tuas autorizações, o chat fica bloqueado.{" "}
+            <button type="button" onClick={() => setRever(rever + 1)}>
+              Rever autorizações
+            </button>
+          </p>
+        )}
         <form className="caixa" onSubmit={onSubmit}>
           <label htmlFor="mensagem" className="so-leitores">
             A tua mensagem
@@ -290,6 +312,7 @@ export default function Chat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
+            disabled={!consentido}
           />
           <button type="submit" disabled={loading || !input.trim()}>
             Enviar
@@ -301,8 +324,8 @@ export default function Chat() {
         <div className="fundo-dentro">
           <p>
             O Lado Positivo é uma inteligência artificial e não substitui o apoio de um
-            profissional. Se estiveres em perigo, liga 112. Todas as conversas são privadas e não
-            são gravadas.
+            profissional. Se estiveres em perigo, liga 112. Mais detalhes na{" "}
+            <a href="/privacidade">política de privacidade</a>.
           </p>
           <a href="https://www.instagram.com/in.sintonia_/" target="_blank" rel="noopener noreferrer">
             <svg
@@ -321,6 +344,23 @@ export default function Chat() {
             <span className="so-leitores">Instagram: </span>
             in.sintonia_
           </a>
+          <button type="button" className="definicoes" onClick={() => setRever(rever + 1)}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            <span className="so-leitores">Definições de privacidade</span>
+          </button>
         </div>
       </footer>
     </div>
